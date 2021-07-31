@@ -1,2 +1,3 @@
-# BiliBiliSpider
-a simple web spider for "www.bilibili.com"
+# 概述
+
+只是一个简单的B站相关的爬虫
