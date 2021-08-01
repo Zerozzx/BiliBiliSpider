@@ -6,6 +6,7 @@ import time  # 做随机延迟，避免访问频率过高被服务器拒绝
 import random  # 正态分布随机
 import re  # 正则匹配
 import jieba  # 切词
+from pyecharts.charts import WordCloud
 
 # 声明B站的API
 # https://api.bilibili.com/x/web-interface/view?bvid={BVCode}
@@ -192,7 +193,7 @@ class BBSpider():
 
 
     # 获取视频评论的JSON解析后对象
-    def GetAllComments(self):
+    def GetAllCommentsJsonObj(self):
         AllComments = []        # 获取所有的评论JSON对象
         Headers = GetHeaders()  # 指定requestHeader
         CommentsNum = 0         # 存储评论总数的变量
@@ -234,7 +235,8 @@ class BBSpider():
             else:
                 print(response)
 
-        return AllComments
+        return AllComments 
+
 
     # 把评论转化成 Pandas 的 DataFrame 数据结构
     def GetDataFrameByComment(self,Comments):
@@ -267,6 +269,18 @@ class BBSpider():
         df = pd.DataFrame(data)
         return df
 
+    # 统计弹幕词频
+    def CalculateWordFrequence(self, DMList):
+        Words = self.CutDM(DMList)
+        WordDict = {}
+        
+        for Word in Words:
+            if Word not in WordDict.keys():
+                WordDict[Word] = 1
+            else:
+                WordDict[Word] = WordDict[Word] + 1
+        
+        return WordDict
     
     # 一键获取弹幕
     def 去吧小蜘蛛抓弹幕(self):
@@ -274,6 +288,16 @@ class BBSpider():
 
     # 一键获取评论
     def 去吧小蜘蛛抓评论(self):
-        Result = self.GetAllComments()
+        Result = self.GetAllCommentsJsonObj()
         return self.GetDataFrameByComment(Result)
+
+    # 生成词云图
+    def 生成词云图(self, MessageList, fileName,wordSizeRange =[10,100],height=1080,width=1920):
+        # 统计一下词频
+        Result = self.CalculateWordFrequence(MessageList)
+        wordCloud = WordCloud()
+        wordCloud.add(series_name="", data_pair=Result.items(),
+                    word_size_range=wordSizeRange, height=height, width=1280)
+        wordCloud.render(f"{fileName}.html")
+
 
