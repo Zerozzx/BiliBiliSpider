@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="BBSpider",
-    version="0.2.7",
+    version="0.2.8",
     author="ZzxxH",
     author_email="654245529@qq.com",
     description="a web spider",

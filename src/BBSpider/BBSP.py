@@ -77,11 +77,11 @@ class BBSpider():
 
     # 获这一年有弹幕的日期 返回的是一个 list
     def __GetHistoryDMAvailableDate(self):
-        if self.VideoDescriptionJson == None:
+        if self.__VideoDescriptionJson == None:
             print("错误：获取历史弹幕列表失败\n原因：视频描述JSON为空")
             return
 
-        oid = self.VideoDescriptionJson['data']['cid']
+        oid = self.__VideoDescriptionJson['data']['cid']
 
         # 获取现在的年份、月份
         TimeStruct = time.localtime()
@@ -121,11 +121,11 @@ class BBSpider():
     def __GetHistoryDMList(self,DateList):
         DMList = []
         # 检查全局变量是否被赋值过
-        if self.VideoDescriptionJson == None:
+        if self.__VideoDescriptionJson == None:
             print("错误:获取历史弹幕失败\n原因:视频描述JSON为空")
             return
 
-        oid = self.VideoDescriptionJson['data']['cid']
+        oid = self.__VideoDescriptionJson['data']['cid']
 
         for Date in DateList:
             for date in Date:
@@ -156,12 +156,12 @@ class BBSpider():
     def __GetCurrentDMList(self):
         DMList = []
         # 检查全局变量是否被赋值过
-        if self.VideoDescriptionJson == None:
+        if self.__VideoDescriptionJson == None:
             print("错误:获取目前弹幕失败\n原因:视频描述JSON为空")
             return
 
-        oid = self.VideoDescriptionJson['data']['cid']
-        pid = self.VideoDescriptionJson['data']['aid']
+        oid = self.__VideoDescriptionJson['data']['cid']
+        pid = self.__VideoDescriptionJson['data']['aid']
 
         url = f"{CurrentDMFileAPI_Ahead}&oid={oid}&pid={pid}&segment_index=1"
 
@@ -184,10 +184,10 @@ class BBSpider():
     def __GetCurrentDMList_New(self):
         DMDict = {}
         # 检查全局变量是否被赋值过
-        if self.VideoDescriptionJson == None:
+        if self.__VideoDescriptionJson == None:
             print("错误:获取目前弹幕失败\n原因:视频描述JSON为空")
             return
-        cid = self.VideoDescriptionJson['data']['cid']
+        cid = self.__VideoDescriptionJson['data']['cid']
 
         url = f"{NewCurrentDMFileAPI_Ahead}/{cid}.xml"
 
@@ -233,11 +233,11 @@ class BBSpider():
         CommentsNum = 0         # 存储评论总数的变量
 
         # 检查全局变量是否被赋值过
-        if self.VideoDescriptionJson == None:
+        if self.__VideoDescriptionJson == None:
             print("错误:获取目前弹幕失败\n原因:视频描述JSON为空")
             return
 
-        oid = self.VideoDescriptionJson['data']['aid']
+        oid = self.__VideoDescriptionJson['data']['aid']
         FUrl = f"{CommentAPI_Ahead}&pn=0&oid={oid}"
 
         # 访问一次,获取评论总数
