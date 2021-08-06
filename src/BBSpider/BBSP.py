@@ -25,6 +25,10 @@ HistoryDMFileAPI_Ahead = "https://api.bilibili.com/x/v2/dm/web/history/seg.so?ty
 # 获取视频目前直接展示的弹幕文件
 CurrentDMFileAPI_Ahead = "https://api.bilibili.com/x/v2/dm/web/seg.so?type=1"
 
+# "https://comment.bilibili.com/{cid}.xml"
+# 获取当前视频展示的弹幕xml文件，包括弹幕发送时间、发送弹幕的用户ID、弹幕内容
+NewCurrentDMFileAPI_Ahead = "https://comment.bilibili.com/"
+
 # "https://api.bilibili.com/x/v2/reply?type=1&pn={pn}}&oid={oid}" pn表示翻页
 # 获取视频评论内容JSON的API
 CommentAPI_Ahead = "https://api.bilibili.com/x/v2/reply?type=1"
@@ -62,17 +66,17 @@ def GetVideoDescriptionJson(BVCode):
 class BBSpider():
 
     # 记录存储了视频描述的 JSON对象
-    VideoDescriptionJson = None
+    __VideoDescriptionJson = None
     # 指定视频的BV号
     BVCode = "BV1fV411Y7ng"
     
     def __init__(self, BVCode):
         self.BVCode = BVCode
-        self.VideoDescriptionJson = GetVideoDescriptionJson(BVCode)
+        self.__VideoDescriptionJson = GetVideoDescriptionJson(BVCode)
     
 
     # 获这一年有弹幕的日期 返回的是一个 list
-    def GetHistoryDMAvailableDate(self):
+    def __GetHistoryDMAvailableDate(self):
         if self.VideoDescriptionJson == None:
             print("错误：获取历史弹幕列表失败\n原因：视频描述JSON为空")
             return
@@ -114,7 +118,7 @@ class BBSpider():
 
 
     # 获取历史弹幕 List
-    def GetHistoryDMList(self,DateList):
+    def __GetHistoryDMList(self,DateList):
         DMList = []
         # 检查全局变量是否被赋值过
         if self.VideoDescriptionJson == None:
@@ -149,7 +153,7 @@ class BBSpider():
 
 
     # 获取现在视频显示的弹幕
-    def GetCurrentDMList(self):
+    def __GetCurrentDMList(self):
         DMList = []
         # 检查全局变量是否被赋值过
         if self.VideoDescriptionJson == None:
@@ -176,9 +180,39 @@ class BBSpider():
 
         return DMList
 
+    # 新版本 获取现在视频显示的弹幕
+    def __GetCurrentDMList_New(self):
+        DMDict = {}
+        # 检查全局变量是否被赋值过
+        if self.VideoDescriptionJson == None:
+            print("错误:获取目前弹幕失败\n原因:视频描述JSON为空")
+            return
+        cid = self.VideoDescriptionJson['data']['cid']
+
+        url = f"{NewCurrentDMFileAPI_Ahead}/{cid}.xml"
+
+        r = requests.get(url, headers=GetHeaders())
+        
+        # 尝试获取文件编码，防止文件乱码
+        r.encoding = r.apparent_encoding
+
+        if r.status_code != 200:
+            print(r)
+            return
+
+        xml = r.text
+        soup = BeautifulSoup(xml, 'lxml')
+        content_all = soup.find_all(name="d")
+        for content in content_all:
+            Time = float(content.attrs["p"].split(",")[0])
+            Message = content.string
+            DMDict[Time] = Message
+        return DMDict
+
+
 
     # 处理所有弹幕内容的空格,并进行分词
-    def CutDM(self,DMList):
+    def __CutDM(self,DMList):
         CutWordList = []
 
         for DM in DMList:
@@ -187,13 +221,13 @@ class BBSpider():
                 Temp = word.replace(' ', '')
                 # 当一个词的长度大于1 又小于4，才加入 list
                 if len(Temp) > 1:
-                    if len(Temp) < 4:
+                    if len(Temp) < 5:
                         CutWordList.append(Temp)
         return CutWordList
 
 
     # 获取视频评论的JSON解析后对象
-    def GetAllCommentsJsonObj(self):
+    def __GetAllCommentsJsonObj(self):
         AllComments = []        # 获取所有的评论JSON对象
         Headers = GetHeaders()  # 指定requestHeader
         CommentsNum = 0         # 存储评论总数的变量
@@ -239,7 +273,7 @@ class BBSpider():
 
 
     # 把评论转化成 Pandas 的 DataFrame 数据结构
-    def GetDataFrameByComment(self,Comments):
+    def __GetDataFrameByComment(self,Comments):
         if len(Comments) <= 0:
             return None
         Count = 0
@@ -270,8 +304,8 @@ class BBSpider():
         return df
 
     # 统计弹幕词频
-    def CalculateWordFrequence(self, DMList):
-        Words = self.CutDM(DMList)
+    def __CalculateWordFrequence(self, DMList):
+        Words = self.__CutDM(DMList)
         WordDict = {}
         
         for Word in Words:
@@ -283,21 +317,36 @@ class BBSpider():
         return WordDict
     
     # 一键获取弹幕
-    def 去吧小蜘蛛抓弹幕(self):
-        return self.GetHistoryDMList(self.GetHistoryDMAvailableDate())
+    def 去吧小蜘蛛抓弹幕(self, bIsHistory=False):
+        if bIsHistory:
+            return self.__GetHistoryDMList(self.__GetHistoryDMAvailableDate())
+        else:
+            return self.__GetCurrentDMList_New()
+        
 
     # 一键获取评论
     def 去吧小蜘蛛抓评论(self):
-        Result = self.GetAllCommentsJsonObj()
-        return self.GetDataFrameByComment(Result)
+        Result = self.__GetAllCommentsJsonObj()
+        return self.__GetDataFrameByComment(Result)
 
     # 生成词云图
-    def 生成词云图(self, MessageList, fileName,wordSizeRange =[10,100],height=1080,width=1920):
+    def 生成词云图(self, MessageList, fileName, wordSizeRange =[10,100], height=1080, width=1920):
         # 统计一下词频
-        Result = self.CalculateWordFrequence(MessageList)
+        Result = self.__CalculateWordFrequence(MessageList)
         wordCloud = WordCloud()
         wordCloud.add(series_name="", data_pair=Result.items(),
                     word_size_range=wordSizeRange, height=height, width=1280)
         wordCloud.render(f"{fileName}.html")
 
+    # 获取弹幕并生成词云图
+    def 获取弹幕并生成词云图(self, FileName = "Result", WordSizeRange =[10,100], Height=1080, Width=1920, bIsHistory=False):
+        DMDict = {}
+        DMDict = self.去吧小蜘蛛抓弹幕(bIsHistory)
+        self.生成词云图(list(DMDict.values()), FileName, WordSizeRange, Height, Width)
+        
+    # 获取评论并生成词云图
+    def 获取评论并生成词云图(self, FileName="Result", WordSizeRange=[10, 100], Height=1080, Width=1920, bIsHistory=False):
+        CommentDataFrame = self.去吧小蜘蛛抓评论()
+        MessageList = CommentDataFrame["Comment"].tolist()
+        self.生成词云图(MessageList, FileName, WordSizeRange, Height,Width)
 
