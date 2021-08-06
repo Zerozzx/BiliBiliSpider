@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="BBSpider",
-    version="0.2.5",
+    version="0.2.6",
     author="ZzxxH",
     author_email="654245529@qq.com",
     description="a web spider",
@@ -27,11 +27,7 @@ setuptools.setup(
     install_requires=[
         'pandas',
         'bs4',
-        'json',
         'requests',
-        'time',
-        'random',
-        're',
         'jieba',
         'pyecharts'
     ]
